@@ -40,7 +40,6 @@
 #include <time.h>
 
 #include <openssl/rand.h>
-#include <rte_malloc.h>
 
 #include "ff_host_interface.h"
 #include "ff_errno.h"
@@ -48,6 +47,13 @@
 static struct timespec current_ts;
 extern void* ff_mem_get_page();
 extern int ff_mem_free_addr(void* p);
+
+int
+ff_in_pcbladdr(uint16_t family, void *faddr, uint16_t fport, void *laddr)
+{
+    return 0;
+}
+
 
 void *
 ff_mmap(void *addr, uint64_t len, int prot, int flags, int fd, uint64_t offset)

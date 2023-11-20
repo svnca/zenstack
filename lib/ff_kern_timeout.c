@@ -1213,6 +1213,11 @@ ff_hardclock(void)
 #endif /* DEVICE_POLLING */
 }
 
+uint64_t ff_get_tsc_ns(void)
+{
+	return 0;
+}
+
 static unsigned int
 ff_tc_get_timecount(struct timecounter *tc)
 {

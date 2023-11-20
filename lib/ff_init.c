@@ -33,6 +33,18 @@
 extern int ff_freebsd_init();
 
 int
+ff_dpdk_if_up(void)
+{
+	return 0;
+}
+
+int
+ff_dpdk_init(int argc, char **argv)
+{
+	return 0;
+}
+
+int
 ff_init(int argc, char * const argv[])
 {
     int ret;
@@ -53,6 +65,11 @@ ff_init(int argc, char * const argv[])
         exit(1);
 
     return 0;
+}
+
+void
+ff_dpdk_run(loop_func_t loop, void *arg)
+{
 }
 
 void

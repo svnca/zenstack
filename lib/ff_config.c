@@ -24,14 +24,14 @@
  *
  */
 
+#define _POSIX_C_SOURCE 200809L
 #include <string.h>
+#include <strings.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <getopt.h>
 #include <ctype.h>
-#include <rte_config.h>
-#include <rte_string_fns.h>
 
 #include "ff_config.h"
 #include "ff_ini_parser.h"
@@ -52,6 +52,9 @@ struct option long_options[] = {
     { 0, 0, 0, 0},
 };
 
+#define RTE_MAX_LCORE 16
+
+#if 0
 static int
 xdigit2val(unsigned char c)
 {
@@ -136,96 +139,6 @@ parse_lcore_mask(struct ff_config *cfg, const char *coremask)
     cfg->dpdk.nb_procs = count;
 
     return 1;
-}
-
-static int
-is_integer(const char *s)
-{
-    if (*s == '-' || *s == '+')
-        s++;
-    if (*s < '0' || '9' < *s)
-        return 0;
-    s++;
-    while ('0' <= *s && *s <= '9')
-        s++;
-    return (*s == '\0');
-}
-
-static int
-freebsd_conf_handler(struct ff_config *cfg, const char *section,
-    const char *name, const char *value)
-{
-    struct ff_freebsd_cfg *newconf, **cur;
-    newconf = (struct ff_freebsd_cfg *)malloc(sizeof(struct ff_freebsd_cfg));
-    if (newconf == NULL) {
-        fprintf(stderr, "freebsd conf malloc failed\n");
-        return 0;
-    }
-
-    newconf->name = strdup(name);
-    newconf->str = strdup(value);
-
-    if (strcmp(section, "boot") == 0) {
-        cur = &cfg->freebsd.boot;
-
-        newconf->value = (void *)newconf->str;
-        newconf->vlen = strlen(value);
-    } else if (strcmp(section, "sysctl") == 0) {
-        cur = &cfg->freebsd.sysctl;
-
-        if (is_integer(value)) {
-            if (strcmp(name, "kern.ipc.maxsockbuf") == 0) {
-                long *p = (long *)malloc(sizeof(long));
-                *p = atol(value);
-                newconf->value = (void *)p;
-                newconf->vlen = sizeof(*p);
-            } else {
-                 int *p = (int *)malloc(sizeof(int));
-                 *p = atoi(value);
-                 newconf->value = (void *)p;
-                 newconf->vlen = sizeof(*p);
-            }
-        } else {
-            newconf->value = (void *)newconf->str;
-            newconf->vlen = strlen(value);
-        }
-    } else {
-        fprintf(stderr, "freebsd conf section[%s] error\n", section);
-        free(newconf);
-        return 0;
-    }
-
-    if (*cur == NULL) {
-        newconf->next = NULL;
-        *cur = newconf;
-    } else {
-        newconf->next = (*cur)->next;
-        (*cur)->next = newconf;
-    }
-
-    return 1;
-}
-// A recursive binary search function. It returns location of x in
-// given array arr[l..r] is present, otherwise -1
-static int
-uint16_binary_search(uint16_t arr[], int l, int r, uint16_t x)
-{
-    if (r >= l) {
-        int mid = l + (r - l)/2;
-
-        // If the element is present at the middle itself
-        if (arr[mid] == x)  return mid;
-
-        // If element is smaller than mid, then it can only be present
-        // in left subarray
-        if (arr[mid] > x) return uint16_binary_search(arr, l, mid-1, x);
-
-        // Else the element can only be present in right subarray
-        return uint16_binary_search(arr, mid+1, r, x);
-    }
-
-    // We reach here when element is not present in array
-    return -1;
 }
 
 static int
@@ -647,6 +560,250 @@ bond_cfg_handler(struct ff_config *cfg, const char *section,
     return 1;
 }
 
+#else
+static int
+ff_parse_args(struct ff_config *cfg, int argc, char *const argv[])
+{
+    int c;
+    int index = 0;
+    optind = 1;
+    while((c = getopt_long(argc, argv, short_options, long_options, &index)) != -1) {
+        switch (c) {
+            case 'c':
+                cfg->filename = strdup(optarg);
+                break;
+            case 'p':
+                cfg->dpdk.proc_id = atoi(optarg);
+                break;
+            case 't':
+                cfg->dpdk.proc_type = strdup(optarg);
+                break;
+            default:
+                return -1;
+        }
+    }
+
+    if (cfg->dpdk.proc_type == NULL) {
+        cfg->dpdk.proc_type = strdup("auto");
+    }
+
+    if (strcmp(cfg->dpdk.proc_type, "primary") &&
+        strcmp(cfg->dpdk.proc_type, "secondary") &&
+        strcmp(cfg->dpdk.proc_type, "auto")) {
+        printf("invalid proc-type:%s\n", cfg->dpdk.proc_type);
+        return -1;
+    }
+
+    if ((uint16_t)cfg->dpdk.proc_id > RTE_MAX_LCORE) {
+        printf("invalid proc_id:%d, use default 0\n", cfg->dpdk.proc_id);
+        cfg->dpdk.proc_id = 0;
+    }
+
+    return 0;
+}
+
+// A recursive binary search function. It returns location of x in
+// given array arr[l..r] is present, otherwise -1
+static int
+uint16_binary_search(uint16_t arr[], int l, int r, uint16_t x)
+{
+    if (r >= l) {
+        int mid = l + (r - l)/2;
+
+        // If the element is present at the middle itself
+        if (arr[mid] == x)  return mid;
+
+        // If element is smaller than mid, then it can only be present
+        // in left subarray
+        if (arr[mid] > x) return uint16_binary_search(arr, l, mid-1, x);
+
+        // Else the element can only be present in right subarray
+        return uint16_binary_search(arr, mid+1, r, x);
+    }
+
+    // We reach here when element is not present in array
+    return -1;
+}
+
+static int
+ff_check_config(struct ff_config *cfg)
+{
+    if(cfg->kni.enable && !cfg->kni.method) {
+        fprintf(stderr, "conf dpdk.method is necessary\n");
+        return -1;
+    }
+
+    if(cfg->kni.method) {
+        if(strcasecmp(cfg->kni.method,"accept") &&
+            strcasecmp(cfg->kni.method,"reject")) {
+            fprintf(stderr, "conf kni.method[accept|reject] is error(%s)\n",
+                cfg->kni.method);
+            return -1;
+        }
+    }
+
+    if(cfg->kni.kni_action) {
+        if (strcasecmp(cfg->kni.kni_action,"alltokni") &&
+            strcasecmp(cfg->kni.kni_action,"alltoff") &&
+            strcasecmp(cfg->kni.kni_action,"default")){
+                fprintf(stderr, "conf kni.kni_action[alltokni|alltoff|default] is error(%s)\n",
+                cfg->kni.kni_action);
+                return -1;
+        }
+    }
+
+    if (cfg->pcap.save_len < PCAP_SAVE_MINLEN)
+        cfg->pcap.save_len = PCAP_SAVE_MINLEN;
+    if (cfg->pcap.snap_len < PCAP_SNAP_MINLEN)
+        cfg->pcap.snap_len = PCAP_SNAP_MINLEN;
+    if (cfg->pcap.save_path==NULL || strlen(cfg->pcap.save_path) ==0)
+        cfg->pcap.save_path = strdup(".");
+
+    #define CHECK_VALID(n) \
+        do { \
+            if (!pc->n) { \
+                fprintf(stderr, "port%d if config error: no %s\n", \
+                    pc->port_id, #n); \
+                return -1; \
+            } \
+        } while (0)
+
+    int i;
+    for (i = 0; i < cfg->dpdk.nb_ports; i++) {
+        uint16_t portid = cfg->dpdk.portid_list[i];
+        struct ff_port_cfg *pc = &cfg->dpdk.port_cfgs[portid];
+        CHECK_VALID(addr);
+        CHECK_VALID(netmask);
+        CHECK_VALID(broadcast);
+        CHECK_VALID(gateway);
+        // check if the lcores in lcore_list are enabled.
+        int k;
+        for (k = 0; k < pc->nb_lcores; k++) {
+            uint16_t lcore_id = pc->lcore_list[k];
+            if (uint16_binary_search(cfg->dpdk.proc_lcore, 0,
+                                     cfg->dpdk.nb_procs-1, lcore_id) < 0) {
+                fprintf(stderr, "lcore %d is not enabled.\n", lcore_id);
+                return -1;
+            }
+        }
+        /*
+         * only primary process process KNI, so if KNI enabled,
+         * primary lcore must stay in every enabled ports' lcore_list
+         */
+        if (cfg->kni.enable &&
+            strcmp(cfg->dpdk.proc_type, "primary") == 0) {
+            int found = 0;
+            int j;
+            uint16_t lcore_id = cfg->dpdk.proc_lcore[cfg->dpdk.proc_id];
+            for (j = 0; j < pc->nb_lcores; j++) {
+                if (pc->lcore_list[j] == lcore_id) {
+                    found = 1;
+                }
+            }
+            if (! found) {
+                fprintf(stderr,
+                         "primary lcore %d should stay in port %d's lcore_list.\n",
+                         lcore_id, pc->port_id);
+                return -1;
+            }
+
+            if (cfg->kni.type != KNI_TYPE_KNI && cfg->kni.type != KNI_TYPE_VIRTIO) {
+                fprintf(stderr,
+                         "kni type value must be 0 or 1, now is:%d\n", cfg->kni.type);
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static void
+ff_default_config(struct ff_config *cfg)
+{
+    memset(cfg, 0, sizeof(struct ff_config));
+
+    cfg->filename = DEFAULT_CONFIG_FILE;
+
+    cfg->dpdk.proc_id = -1;
+    cfg->dpdk.numa_on = 1;
+    cfg->dpdk.promiscuous = 1;
+    cfg->dpdk.pkt_tx_delay = BURST_TX_DRAIN_US;
+
+    cfg->freebsd.hz = 100;
+    cfg->freebsd.physmem = 1048576*256;
+    cfg->freebsd.fd_reserve = 0;
+    cfg->freebsd.mem_size = 256;
+}
+
+static int
+is_integer(const char *s)
+{
+    if (*s == '-' || *s == '+')
+        s++;
+    if (*s < '0' || '9' < *s)
+        return 0;
+    s++;
+    while ('0' <= *s && *s <= '9')
+        s++;
+    return (*s == '\0');
+}
+
+static int
+freebsd_conf_handler(struct ff_config *cfg, const char *section,
+    const char *name, const char *value)
+{
+    struct ff_freebsd_cfg *newconf, **cur;
+    newconf = (struct ff_freebsd_cfg *)malloc(sizeof(struct ff_freebsd_cfg));
+    if (newconf == NULL) {
+        fprintf(stderr, "freebsd conf malloc failed\n");
+        return 0;
+    }
+
+    newconf->name = strdup(name);
+    newconf->str = strdup(value);
+
+    if (strcmp(section, "boot") == 0) {
+        cur = &cfg->freebsd.boot;
+
+        newconf->value = (void *)newconf->str;
+        newconf->vlen = strlen(value);
+    } else if (strcmp(section, "sysctl") == 0) {
+        cur = &cfg->freebsd.sysctl;
+
+        if (is_integer(value)) {
+            if (strcmp(name, "kern.ipc.maxsockbuf") == 0) {
+                long *p = (long *)malloc(sizeof(long));
+                *p = atol(value);
+                newconf->value = (void *)p;
+                newconf->vlen = sizeof(*p);
+            } else {
+                 int *p = (int *)malloc(sizeof(int));
+                 *p = atoi(value);
+                 newconf->value = (void *)p;
+                 newconf->vlen = sizeof(*p);
+            }
+        } else {
+            newconf->value = (void *)newconf->str;
+            newconf->vlen = strlen(value);
+        }
+    } else {
+        fprintf(stderr, "freebsd conf section[%s] error\n", section);
+        free(newconf);
+        return 0;
+    }
+
+    if (*cur == NULL) {
+        newconf->next = NULL;
+        *cur = newconf;
+    } else {
+        newconf->next = (*cur)->next;
+        (*cur)->next = newconf;
+    }
+
+    return 1;
+}
+
 static int
 ini_parse_handler(void* user, const char* section, const char* name,
     const char* value)
@@ -666,7 +823,7 @@ ini_parse_handler(void* user, const char* section, const char* name,
         pconfig->dpdk.no_huge = atoi(value);
     } else if (MATCH("dpdk", "lcore_mask")) {
         pconfig->dpdk.lcore_mask = strdup(value);
-        return parse_lcore_mask(pconfig, pconfig->dpdk.lcore_mask);
+        /* return parse_lcore_mask(pconfig, pconfig->dpdk.lcore_mask); */
     } else if (MATCH("dpdk", "base_virtaddr")) {
         pconfig->dpdk.base_virtaddr= strdup(value);
     } else if (MATCH("dpdk", "file_prefix")) {
@@ -674,7 +831,7 @@ ini_parse_handler(void* user, const char* section, const char* name,
     } else if (MATCH("dpdk", "pci_whitelist")) {
         pconfig->dpdk.pci_whitelist = strdup(value);
     } else if (MATCH("dpdk", "port_list")) {
-        return parse_port_list(pconfig, value);
+        /* return parse_port_list(pconfig, value); */
     } else if (MATCH("dpdk", "nb_vdev")) {
         pconfig->dpdk.nb_vdev = atoi(value);
     } else if (MATCH("dpdk", "nb_bond")) {
@@ -722,11 +879,11 @@ ini_parse_handler(void* user, const char* section, const char* name,
     } else if (strcmp(section, "freebsd.sysctl") == 0) {
         return freebsd_conf_handler(pconfig, "sysctl", name, value);
     } else if (strncmp(section, "port", 4) == 0) {
-        return port_cfg_handler(pconfig, section, name, value);
+        /* return port_cfg_handler(pconfig, section, name, value); */
     } else if (strncmp(section, "vdev", 4) == 0) {
-        return vdev_cfg_handler(pconfig, section, name, value);
+        /* return vdev_cfg_handler(pconfig, section, name, value); */
     } else if (strncmp(section, "bond", 4) == 0) {
-        return bond_cfg_handler(pconfig, section, name, value);
+        /* return bond_cfg_handler(pconfig, section, name, value); */
     } else if (strcmp(section, "pcap") == 0) {
         if (strcmp(name, "snaplen") == 0) {
             pconfig->pcap.snap_len = (uint16_t)atoi(value);
@@ -889,158 +1046,6 @@ dpdk_args_setup(struct ff_config *cfg)
     return n;
 }
 
-static int
-ff_parse_args(struct ff_config *cfg, int argc, char *const argv[])
-{
-    int c;
-    int index = 0;
-    optind = 1;
-    while((c = getopt_long(argc, argv, short_options, long_options, &index)) != -1) {
-        switch (c) {
-            case 'c':
-                cfg->filename = strdup(optarg);
-                break;
-            case 'p':
-                cfg->dpdk.proc_id = atoi(optarg);
-                break;
-            case 't':
-                cfg->dpdk.proc_type = strdup(optarg);
-                break;
-            default:
-                return -1;
-        }
-    }
-
-    if (cfg->dpdk.proc_type == NULL) {
-        cfg->dpdk.proc_type = strdup("auto");
-    }
-
-    if (strcmp(cfg->dpdk.proc_type, "primary") &&
-        strcmp(cfg->dpdk.proc_type, "secondary") &&
-        strcmp(cfg->dpdk.proc_type, "auto")) {
-        printf("invalid proc-type:%s\n", cfg->dpdk.proc_type);
-        return -1;
-    }
-
-    if ((uint16_t)cfg->dpdk.proc_id > RTE_MAX_LCORE) {
-        printf("invalid proc_id:%d, use default 0\n", cfg->dpdk.proc_id);
-        cfg->dpdk.proc_id = 0;
-    }
-
-    return 0;
-}
-
-static int
-ff_check_config(struct ff_config *cfg)
-{
-    if(cfg->kni.enable && !cfg->kni.method) {
-        fprintf(stderr, "conf dpdk.method is necessary\n");
-        return -1;
-    }
-
-    if(cfg->kni.method) {
-        if(strcasecmp(cfg->kni.method,"accept") &&
-            strcasecmp(cfg->kni.method,"reject")) {
-            fprintf(stderr, "conf kni.method[accept|reject] is error(%s)\n",
-                cfg->kni.method);
-            return -1;
-        }
-    }
-
-    if(cfg->kni.kni_action) {
-        if (strcasecmp(cfg->kni.kni_action,"alltokni") &&
-            strcasecmp(cfg->kni.kni_action,"alltoff") &&
-            strcasecmp(cfg->kni.kni_action,"default")){
-                fprintf(stderr, "conf kni.kni_action[alltokni|alltoff|default] is error(%s)\n",
-                cfg->kni.kni_action);
-                return -1;
-        }
-    }
-
-    if (cfg->pcap.save_len < PCAP_SAVE_MINLEN)
-        cfg->pcap.save_len = PCAP_SAVE_MINLEN;
-    if (cfg->pcap.snap_len < PCAP_SNAP_MINLEN)
-        cfg->pcap.snap_len = PCAP_SNAP_MINLEN;
-    if (cfg->pcap.save_path==NULL || strlen(cfg->pcap.save_path) ==0)
-        cfg->pcap.save_path = strdup(".");
-
-    #define CHECK_VALID(n) \
-        do { \
-            if (!pc->n) { \
-                fprintf(stderr, "port%d if config error: no %s\n", \
-                    pc->port_id, #n); \
-                return -1; \
-            } \
-        } while (0)
-
-    int i;
-    for (i = 0; i < cfg->dpdk.nb_ports; i++) {
-        uint16_t portid = cfg->dpdk.portid_list[i];
-        struct ff_port_cfg *pc = &cfg->dpdk.port_cfgs[portid];
-        CHECK_VALID(addr);
-        CHECK_VALID(netmask);
-        CHECK_VALID(broadcast);
-        CHECK_VALID(gateway);
-        // check if the lcores in lcore_list are enabled.
-        int k;
-        for (k = 0; k < pc->nb_lcores; k++) {
-            uint16_t lcore_id = pc->lcore_list[k];
-            if (uint16_binary_search(cfg->dpdk.proc_lcore, 0,
-                                     cfg->dpdk.nb_procs-1, lcore_id) < 0) {
-                fprintf(stderr, "lcore %d is not enabled.\n", lcore_id);
-                return -1;
-            }
-        }
-        /*
-         * only primary process process KNI, so if KNI enabled,
-         * primary lcore must stay in every enabled ports' lcore_list
-         */
-        if (cfg->kni.enable &&
-            strcmp(cfg->dpdk.proc_type, "primary") == 0) {
-            int found = 0;
-            int j;
-            uint16_t lcore_id = cfg->dpdk.proc_lcore[cfg->dpdk.proc_id];
-            for (j = 0; j < pc->nb_lcores; j++) {
-                if (pc->lcore_list[j] == lcore_id) {
-                    found = 1;
-                }
-            }
-            if (! found) {
-                fprintf(stderr,
-                         "primary lcore %d should stay in port %d's lcore_list.\n",
-                         lcore_id, pc->port_id);
-                return -1;
-            }
-
-            if (cfg->kni.type != KNI_TYPE_KNI && cfg->kni.type != KNI_TYPE_VIRTIO) {
-                fprintf(stderr,
-                         "kni type value must be 0 or 1, now is:%d\n", cfg->kni.type);
-                return -1;
-            }
-        }
-    }
-
-    return 0;
-}
-
-static void
-ff_default_config(struct ff_config *cfg)
-{
-    memset(cfg, 0, sizeof(struct ff_config));
-
-    cfg->filename = DEFAULT_CONFIG_FILE;
-
-    cfg->dpdk.proc_id = -1;
-    cfg->dpdk.numa_on = 1;
-    cfg->dpdk.promiscuous = 1;
-    cfg->dpdk.pkt_tx_delay = BURST_TX_DRAIN_US;
-
-    cfg->freebsd.hz = 100;
-    cfg->freebsd.physmem = 1048576*256;
-    cfg->freebsd.fd_reserve = 0;
-    cfg->freebsd.mem_size = 256;
-}
-
 int
 ff_load_config(int argc, char *const argv[])
 {
@@ -1077,3 +1082,9 @@ ff_load_config(int argc, char *const argv[])
 
     return 0;
 }
+/* int */
+/* ff_load_config(int argc, char *const argv[]) */
+/* { */
+/* 	return 0; */
+/* } */
+#endif

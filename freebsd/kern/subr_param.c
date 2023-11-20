@@ -177,6 +177,7 @@ init_param1(void)
 	TUNABLE_INT_FETCH("kern.hz", &hz);
 	if (hz == -1)
 		hz = vm_guest > VM_GUEST_NO ? HZ_VM : HZ;
+	hz = HZ;
 	tick = 1000000 / hz;
 	tick_sbt = SBT_1S / hz;
 	tick_bt = sbttobt(tick_sbt);

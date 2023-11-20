@@ -1,6 +1,7 @@
 ff_hardclock
 ff_freebsd_init
 ff_socket
+sv_socket
 ff_setsockopt
 ff_getsockopt
 ff_ioctl

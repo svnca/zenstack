@@ -720,6 +720,24 @@ kern_fail:
     return (-1);
 }
 
+
+struct socket *
+sv_socket(int domain, int type, int protocol)
+{
+	struct thread *td = curthread;
+	struct socket *so;
+	int error;
+
+	error = socreate(domain, &so, type, protocol, td->td_ucred, td);
+	if (error)
+		goto kern_fail;
+
+	return so;
+kern_fail:
+	ff_os_errno(error);
+	return NULL;
+}
+
 int
 ff_getsockopt(int s, int level, int optname, void *optval,
     socklen_t *optlen)

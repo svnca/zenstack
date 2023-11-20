@@ -28,7 +28,7 @@ endif
 
 HOST_OS:=$(shell uname -s)
 
-#DEBUG=-O0 -gdwarf-2 -g3 -Wno-format-truncation
+DEBUG=-O0 -gdwarf-2 -g3 -Wno-format-truncation
 
 # No DPDK KNI support on FreeBSD
 ifneq ($(TGT_OS),FreeBSD)
@@ -52,10 +52,6 @@ FF_TCPHPTS=1
 FF_EXTRA_TCP_STACKS=1
 
 include ${TOPDIR}/mk/kern.pre.mk
-
-ifneq ($(shell pkg-config --exists libdpdk && echo 0),0)
-$(error "no installation of DPDK found, maybe you shuld export environment variable `PKG_CONFIG_PATH`")
-endif
 
 PKGCONF ?= pkg-config
 
@@ -264,15 +260,13 @@ FF_HOST_SRCS+=              \
 	ff_host_interface.c \
 	ff_config.c         \
 	ff_ini_parser.c     \
-	ff_dpdk_if.c        \
-	ff_dpdk_pcap.c      \
 	ff_epoll.c          \
 	ff_init.c	
 
-ifdef FF_KNI
-FF_HOST_SRCS+=              \
-	ff_dpdk_kni.c
-endif
+# ifdef FF_KNI
+# FF_HOST_SRCS+=              \
+# 	ff_dpdk_kni.c
+# endif
 
 ifdef FF_USE_PAGE_ARRAY
 FF_HOST_SRCS+=              \

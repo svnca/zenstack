@@ -122,7 +122,11 @@ int loop(void *arg)
 
 int main(int argc, char * argv[])
 {
+    struct socket *so;
+
+    printf("ff_init\n");
     ff_init(argc, argv);
+    printf("ff_init finished\n");
 
     kq = ff_kqueue();
     if (kq < 0) {
@@ -130,6 +134,9 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
+    so = sv_socket(AF_INET, SOCK_STREAM, 0);
+    if (!so)
+	    printf("sv_socket: %p: errno: %s\n", so, strerror(errno));
     sockfd = ff_socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
         printf("ff_socket failed, sockfd:%d, errno:%d, %s\n", sockfd, errno, strerror(errno));

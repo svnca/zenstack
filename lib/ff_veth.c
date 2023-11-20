@@ -87,6 +87,10 @@ struct ff_veth_softc {
     struct ff_dpdk_if_context *host_ctx;
 };
 
+void ff_dpdk_deregister_if(struct ff_dpdk_if_context *ctx)
+{
+}
+
 static int
 ff_veth_config(struct ff_veth_softc *sc, struct ff_port_cfg *cfg)
 {
@@ -238,7 +242,7 @@ ff_mbuf_free(void *m)
 static void
 ff_mbuf_ext_free(struct mbuf *m)
 {
-    ff_dpdk_pktmbuf_free(ff_rte_frm_extcl(m));
+    /* ff_dpdk_pktmbuf_free(ff_rte_frm_extcl(m)); */
 }
 
 int ff_zc_mbuf_get(struct ff_zc_mbuf *m, int len) {
@@ -365,8 +369,9 @@ ff_veth_process_packet(void *arg, void *m)
 static int
 ff_veth_transmit(struct ifnet *ifp, struct mbuf *m)
 {
-    struct ff_veth_softc *sc = (struct ff_veth_softc *)ifp->if_softc;
-    return ff_dpdk_if_send(sc->host_ctx, (void*)m, m->m_pkthdr.len);
+    /* struct ff_veth_softc *sc = (struct ff_veth_softc *)ifp->if_softc; */
+    /* return ff_dpdk_if_send(sc->host_ctx, (void*)m, m->m_pkthdr.len); */
+	return 0;
 }
 
 static void
@@ -588,6 +593,12 @@ done:
     return ret;
 }
 #endif /* INET6 */
+
+struct ff_dpdk_if_context *
+ff_dpdk_register_if(void *sc, void *ifp, struct ff_port_cfg *cfg)
+{
+	return NULL;
+}
 
 static int
 ff_veth_setup_interface(struct ff_veth_softc *sc, struct ff_port_cfg *cfg)

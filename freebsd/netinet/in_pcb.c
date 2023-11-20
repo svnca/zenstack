@@ -1341,6 +1341,13 @@ done:
 	return (error);
 }
 
+int
+ff_rss_check(void *softc, uint32_t saddr, uint32_t daddr,
+	     uint16_t sport, uint16_t dport)
+{
+	return 1;
+}
+
 /*
  * Set up for a connect from a socket to the specified address.
  * On entry, *laddrp and *lportp should contain the current local

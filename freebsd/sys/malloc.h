@@ -152,7 +152,14 @@ struct malloc_type_header {
 	SYSINIT(type##_init, SI_SUB_KMEM, SI_ORDER_THIRD, malloc_init,	\
 	    type);							\
 	SYSUNINIT(type##_uninit, SI_SUB_KMEM, SI_ORDER_ANY,		\
-	    malloc_uninit, type)
+	    malloc_uninit, type)					\
+	SET_DEFINE(sysinit_set, type##_init##_sys_init)			\
+	SET_DEFINE(sysuninit_set, type##_uninit##_sys_uninit)
+
+#define MALLOC_SET_DECLARE()						\
+	ptype *__CONCAT(sysinit_set, set)[LINKER_SET_MAX_SIZE];		\
+	unsigned int __CONCAT(__size_of_set_,set)
+
 
 #define	MALLOC_DECLARE(type) \
 	extern struct malloc_type type[1]

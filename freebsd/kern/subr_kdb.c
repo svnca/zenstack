@@ -73,6 +73,8 @@ struct trapframe *kdb_frame = NULL;
 #define	KDB_ALT_BREAK_TO_DEBUGGER	0
 #endif
 
+SET_DECLARE(kdb_dbbe_set, struct kdb_dbbe);
+
 static int	kdb_break_to_debugger = KDB_BREAK_TO_DEBUGGER;
 static int	kdb_alt_break_to_debugger = KDB_ALT_BREAK_TO_DEBUGGER;
 

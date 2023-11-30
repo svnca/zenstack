@@ -200,6 +200,9 @@ struct sysctl_oid {
 	u_int		 oid_running;
 	const char	*oid_descr;
 	const char	*oid_label;
+#if !defined(USE_LINKER)
+	struct sysctl_oid *next;
+#endif
 };
 
 #define	SYSCTL_IN(r, p, l)	(r->newfunc)(r, p, l)

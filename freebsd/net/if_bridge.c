@@ -2451,6 +2451,7 @@ bridge_input(struct ifnet *ifp, struct mbuf *m)
 #   define OR_PFIL_HOOKED_INET6
 #endif
 
+#if USE_LINKER
 #define GRAB_OUR_PACKETS(iface) \
 	if ((iface)->if_type == IFT_GIF) \
 		continue; \
@@ -2495,7 +2496,6 @@ bridge_input(struct ifnet *ifp, struct mbuf *m)
 		m_freem(m);						\
 		return (NULL);						\
 	}
-
 	/*
 	 * Unicast.  Make sure it's not for the bridge.
 	 */
@@ -2522,7 +2522,7 @@ bridge_input(struct ifnet *ifp, struct mbuf *m)
 
 	/* Perform the bridge forwarding function. */
 	bridge_forward(sc, bif, m);
-
+#endif
 	return (NULL);
 }
 

@@ -108,7 +108,8 @@ struct mod_pnp_match_info
 
 #include <sys/linker_set.h>
 
-#define	MODULE_METADATA_CONCAT(uniquifier)	_mod_metadata##uniquifier
+#define	MODULE_METADATA_CONCAT1(uniquifier) __CONCAT(_mod_metadata, uniquifier)
+#define	MODULE_METADATA_CONCAT(uniquifier) MODULE_METADATA_CONCAT1(uniquifier)
 #define	MODULE_METADATA(uniquifier, type, data, cval)			\
 	static struct mod_metadata MODULE_METADATA_CONCAT(uniquifier) = {	\
 		MDT_STRUCT_VERSION,					\
@@ -166,8 +167,7 @@ struct mod_pnp_match_info
 
 #define	MODULE_VERSION_CONCAT(module, version)	_##module##_version
 #define	MODULE_VERSION(module, version)					\
-	static struct mod_version MODULE_VERSION_CONCAT(module, version)\
-	    __section(".data") = {					\
+	static struct mod_version MODULE_VERSION_CONCAT(module, version) = {					\
 		version							\
 	};								\
 	MODULE_METADATA(MODULE_VERSION_CONCAT(module, version), MDT_VERSION,\

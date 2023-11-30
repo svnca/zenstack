@@ -260,6 +260,9 @@ callout_callwheel_init(void *dummy)
     cc->cc_callout = malloc(ncallout * sizeof(struct callout),
         M_CALLOUT, M_WAITOK);
     callout_cpu_init(cc, timeout_cpu);
+    /* __set__head_f = 22; */
+
+    /* printf("__set__head_f = %d\n", __set__head_f); */
 }
 SYSINIT(callwheel_init, SI_SUB_CPU, SI_ORDER_ANY, callout_callwheel_init, NULL);
 

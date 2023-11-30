@@ -70,7 +70,7 @@ HOST_INCLUDES+= -I/usr/local/include/libepoll-shim
 endif
 
 ifndef DEBUG
-HOST_CFLAGS = -O2 -frename-registers  -funswitch-loops -fweb -Wno-format-truncation
+HOST_CFLAGS = -O2 -frename-registers  -funswitch-loops -fweb -Wno-format-truncation -Wno-nested-externs -Wno-unused-function
 else
 HOST_CFLAGS = ${DEBUG} 
 endif
@@ -133,7 +133,7 @@ HOST_CFLAGS+= -DIPSEC
 CFLAGS+= -DIPSEC
 endif
 
-HOST_C= ${CC} -c $(HOST_CFLAGS) ${HOST_INCLUDES} ${WERROR} ${PROF} $<
+HOST_C= ${CC} -save-temps=obj -c $(HOST_CFLAGS) ${HOST_INCLUDES} ${WERROR} ${PROF} $<
 
 
 ifneq ($(filter amd64 i386,${MACHINE_CPUARCH}),)
@@ -196,6 +196,8 @@ endif
 
 # add for LVS tcp option toa, disabled by default
 # CFLAGS+= -DLVS_TCPOPT_TOA
+CFLAGS+= -Wno-nested-externs
+CFLAGS+= -Wno-unused-function
 
 VPATH+= $S/${MACHINE_CPUARCH}/${MACHINE_CPUARCH}
 VPATH+= $S/kern
@@ -250,14 +252,19 @@ FF_SRCS+=                     \
 	ff_veth.c             \
 	ff_route.c
 
+
+# uinet_if_pcap.c
+# uinet_if_pcap_host.c
+# uinet_host_interface.c
+
 ifdef FF_NETGRAPH
 FF_SRCS+=                   \
         ff_ng_base.c        \
         ff_ngctl.c
 endif
 
-FF_HOST_SRCS+=              \
-	ff_host_interface.c \
+FF_HOST_SRCS+=                 \
+	ff_host_interface.c    \
 	ff_config.c         \
 	ff_ini_parser.c     \
 	ff_epoll.c          \
@@ -664,6 +671,12 @@ ${ASM_OBJS}: %.o: %.S ${IMACROS_FILE}
 ${OBJS}: %.o: %.c ${IMACROS_FILE}
 	${NORMAL_C}
 
+TEMP_SRCS = $(HOST_SRCS) $(SRCS)
+TEMPS := $(TEMP_SRCS:%.c=%.i)
+TEMPS += $(TEMP_SRCS:%.c=%.s)
+
+%.i: %.c ${IMACROS_FILE}
+	${CC} -E ${CFLAGS} ${KERNEL_CFLAGS} ${INCLUDES} ${WERROR} ${PROF} $< -o $@
 
 .SUFFIXES: .m
 
@@ -678,6 +691,7 @@ clean:
 	rm -f libfstack.a
 	rm -f ${MHEADERS} ${MSRCS} ${HOST_OBJS} ${ASM_OBJS} ${OBJS} ${PROGRAM} ${IMACROS_FILE}
 	rm -rf ${MACHINE_INCLUDES_ROOT}
+	-$(RM) $(TEMPS)
 
 
 .PHONY: machine_includes

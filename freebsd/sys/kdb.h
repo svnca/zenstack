@@ -51,7 +51,6 @@ struct kdb_dbbe {
 	dbbe_trap_f	*dbbe_trap;
 	int		dbbe_active;
 };
-
 #define	KDB_BACKEND(name, init, trace, trace_thread, trap) \
 	static struct kdb_dbbe name##_dbbe = {		\
 		.dbbe_name = #name,			\
@@ -61,8 +60,6 @@ struct kdb_dbbe {
 		.dbbe_trap = trap			\
 	};						\
 	DATA_SET(kdb_dbbe_set, name##_dbbe)
-
-SET_DECLARE(kdb_dbbe_set, struct kdb_dbbe);
 
 extern u_char kdb_active;		/* Non-zero while in debugger. */
 extern int debugger_on_panic;		/* enter the debugger on panic. */

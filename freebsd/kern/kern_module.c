@@ -44,6 +44,9 @@ __FBSDID("$FreeBSD$");
 #include <sys/module.h>
 #include <sys/linker.h>
 
+unsigned int __size_of_set_sysuninit_set;
+struct sysinit *__set_sysuninit_set[1024];
+
 static MALLOC_DEFINE(M_MODULE, "module", "module data structures");
 
 struct module {

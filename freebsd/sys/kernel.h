@@ -222,6 +222,9 @@ struct sysinit {
 	enum sysinit_elem_order	order;		/* init order within subsystem*/
 	sysinit_cfunc_t func;			/* function		*/
 	const void	*udata;			/* multiplexer/argument */
+#if !defined(USE_LINKER)
+	struct sysinit *next;
+#endif
 };
 
 /*

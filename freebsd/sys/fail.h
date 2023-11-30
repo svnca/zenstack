@@ -265,8 +265,12 @@ __END_DECLS
  * @param error_var  A variable to set to the failpoint's specified
  *                   return-value when triggered
  */
+#if USE_LINKER
 #define KFAIL_POINT_ERROR(parent, name, error_var) \
 	KFAIL_POINT_CODE(parent, name, (error_var) = RETURN_VALUE)
+#else
+#define KFAIL_POINT_ERROR(parent, name, error_var)
+#endif
 
 /**
  * Instantiate a failpoint which sets an error and then goes to a

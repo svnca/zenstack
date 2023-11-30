@@ -1138,7 +1138,9 @@ static int
 sysctl_test_fail_point(SYSCTL_HANDLER_ARGS)
 {
 
+#ifdef USE_LINKER
 	KFAIL_POINT_RETURN(DEBUG_FP, test_fail_point);
+#endif
 	return (0);
 }
 SYSCTL_OID(_debug_fail_point, OID_AUTO, test_trigger_fail_point,

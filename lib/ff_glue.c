@@ -210,9 +210,10 @@ sysctl_kern_smp_active(SYSCTL_HANDLER_ARGS)
     error = SYSCTL_OUT(req, &active, sizeof(active));
     return (error);
 }
+extern void procinit(void);
 
 void
-procinit()
+procinit(void)
 {
     sx_init(&allproc_lock, "allproc");
     LIST_INIT(&allproc);
@@ -544,8 +545,7 @@ ppsratecheck(struct timeval *lasttime, int *curpps, int maxpps)
  * Compute number of ticks in the specified amount of time.
  */
 int
-tvtohz(tv)
-    struct timeval *tv;
+tvtohz(struct timeval *tv)
 {
     register unsigned long ticks;
     register long sec, usec;
@@ -732,12 +732,13 @@ chgumtxcnt(struct uidinfo *uip, int diff, rlim_t max)
     return (chglimit(uip, &uip->ui_umtxcnt, diff, max, "umtxcnt"));
 }
 
+extern struct plimit *lim_alloc(void);
 /*
  * Allocate a new resource limits structure and initialize its
  * reference count and mutex pointer.
  */
 struct plimit *
-lim_alloc()
+lim_alloc(void)
 {
     struct plimit *limp;
 
@@ -966,9 +967,9 @@ configure_final(void *dummy)
  * credentials rather than those of the current process.
  */
 void
-pgsigio(sigiop, sig, checkctty)
-    struct sigio **sigiop;
-    int sig, checkctty;
+pgsigio(
+    struct sigio **sigiop,
+    int sig, int checkctty)
 {
     panic("SIGIO not supported yet\n");
 #ifdef notyet
@@ -1119,6 +1120,7 @@ foffset_lock(struct file *fp, int flags)
     struct mtx *mtxp;
     off_t res;
 
+    (void)mtxp;
     KASSERT((flags & FOF_OFFSET) == 0, ("FOF_OFFSET passed"));
 
 #if OFF_MAX <= LONG_MAX
@@ -1413,6 +1415,7 @@ elf_cpu_parse_dynamic(caddr_t loadbase __unused, Elf_Dyn *dynamic __unused)
 }
 #endif
 
+extern int pmap_change_prot(vm_offset_t va, vm_size_t size, vm_prot_t prot);
 int
 pmap_change_prot(vm_offset_t va, vm_size_t size, vm_prot_t prot)
 {

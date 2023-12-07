@@ -61,7 +61,7 @@ CFLAGS+= --param large-function-growth=100000
 CFLAGS+= --param max-inline-insns-single=10000
 endif
 endif
-WERROR?= -Werror -Wno-unused-variable
+# WERROR?= -Werror -Wno-unused-variable
 
 # XXX LOCORE means "don't declare C stuff" not "for locore.s".
 ASM_CFLAGS= -x assembler-with-cpp -DLOCORE ${CFLAGS} ${KERNEL_CFLAGS}
@@ -71,6 +71,7 @@ CLANG_NO_IAS= -no-integrated-as
 endif
 
 DEFINED_PROF=	${PROF}
+WERROR_OFF = -Wno-unevaluated-expression
 
 # Put configuration-specific C flags last (except for ${PROF}) so that they
 # can override the others.
@@ -79,7 +80,7 @@ CFLAGS+=	${CONF_CFLAGS}
 # Optional linting. This can be overridden in /etc/make.conf.
 LINTFLAGS=	${LINTOBJKERNFLAGS}
 
-NORMAL_C= ${CC} -save-temps=obj -c ${CFLAGS} ${KERNEL_CFLAGS} ${INCLUDES} ${WERROR} ${PROF} $< -o $@
+NORMAL_C= ${CC} -save-temps=obj -c ${CFLAGS} ${KERNEL_CFLAGS} ${INCLUDES} ${WERROR} ${WERROR_OFF} ${PROF} $< -o $@
 NORMAL_S= ${CC} -c ${ASM_CFLAGS} ${INCLUDES} ${WERROR} $<
 PROFILE_C= ${CC} -c ${CFLAGS} ${KERNEL_CFLAGS} ${INCLUDES} ${WERROR} $<
 NORMAL_C_NOWERROR= ${CC} -c ${CFLAGS} ${KERNEL_CFLAGS} ${INCLUDES} ${PROF} $<

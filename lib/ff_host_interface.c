@@ -196,7 +196,7 @@ ff_clock_gettime_ns(int id)
 }
 
 void
-ff_get_current_time(time_t *sec, long *nsec)
+ff_get_current_time(int64_t *sec, long *nsec)
 {
     if (sec) {
         *sec = current_ts.tv_sec;

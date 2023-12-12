@@ -22,8 +22,14 @@ PREFIX_BIN=/usr/local/bin
 F-STACK_CONF=/etc/f-stack.conf
 F-STACK_VERSION=1.24
 TGT_OS=$(shell uname)
+TGT_ARCH=x86
 ifeq ($(TGT_OS),FreeBSD)
 CC=gcc
+else ifeq ($(TGT_OS),Darwin)
+DARWIN=1
+ifeq ($(shell uname -m),FreeBSD)
+TGT_ARCH=arm64
+endif
 endif
 
 HOST_OS:=$(shell uname -s)
@@ -256,7 +262,6 @@ FF_SRCS+=                     \
 # uinet_if_pcap.c
 # uinet_if_pcap_host.c
 # uinet_host_interface.c
-# ff_epoll.c
 
 ifdef FF_NETGRAPH
 FF_SRCS+=                   \
@@ -269,6 +274,9 @@ FF_HOST_SRCS+=                 \
 	ff_config.c         \
 	ff_ini_parser.c     \
 	ff_init.c
+ifeq ($(TGT_OS),Linux)
+FF_HOST_SRCS += ff_epoll.c
+endif
 
 # ifdef FF_KNI
 # FF_HOST_SRCS+=              \

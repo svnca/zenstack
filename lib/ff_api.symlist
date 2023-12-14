@@ -18,7 +18,6 @@ ff_recvfrom
 ff_recvmsg 
 ff_select
 ff_fcntl
-ff_socketpair
 ff_poll
 ff_accept
 ff_listen
@@ -45,7 +44,6 @@ ff_rtioctl
 ff_gettimeofday
 ff_fdisused
 ff_getmaxfd
-ff_ngctl
 ff_ioctl_freebsd
 ff_getsockopt_freebsd
 ff_setsockopt_freebsd
@@ -58,4 +56,3 @@ ff_mbuf_set_vlan_info
 ff_zc_mbuf_get
 ff_zc_mbuf_write
 ff_zc_mbuf_read
-ff_get_traffic

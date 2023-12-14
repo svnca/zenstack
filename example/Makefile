@@ -9,14 +9,23 @@ endif
 # endif
 
 PKGCONF ?= pkg-config
+HOST_OS := $(shell uname -s)
 
 CFLAGS += -O0 -g -gdwarf-2 -I$(TOPDIR)/lib
 
 LIBS+= $(shell $(PKGCONF) --static --libs libdpdk)
 # LIBS+= -L${FF_PATH}/lib -Wl,--whole-archive,-lfstack,--no-whole-archive
 # LIBS+= -Wl,--no-whole-archive -lrt -lm -ldl -lcrypto -pthread
+
+ifeq ($(HOST_OS),Darwin)
+LIBS += "-L/usr/local/opt/openssl@1.1/lib"
+endif
+
 LIBS+= -L${FF_PATH}/lib -lfstack
-LIBS+= -lrt -lm -ldl -lcrypto -pthread
+ifneq ($(HOST_OS),Darwin)
+LIBS+= -lrt
+endif
+LIBS+= -lm -ldl -lcrypto -pthread
 
 TARGET="helloworld"
 all:

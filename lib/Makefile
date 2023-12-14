@@ -59,6 +59,14 @@ FF_EXTRA_TCP_STACKS=1
 
 include ${TOPDIR}/mk/kern.pre.mk
 
+ifeq ($(HOST_OS),FreeBSD)
+CFLAGS += -DFreeBSD
+else ifeq ($(HOST_OS),Darwin)
+CFLAGS += -DDarwin
+else ifeq ($(HOST_OS),Linux)
+CFLAGS += -DLinux
+endif
+
 PKGCONF ?= pkg-config
 
 # DPDK_CFLAGS= -Wall -Wno-deprecated-declarations -Werror $(shell $(PKGCONF) --cflags libdpdk)
@@ -72,7 +80,13 @@ INCLUDES+= -I./opt
 # export LDFLAGS="-L/opt/homebrew/opt/openssl@1.1/lib"
 # export CPPFLAGS="-I/opt/homebrew/opt/openssl@1.1/include"
 # Include search path for files that only include host OS headers
+ifeq ($(TGT_OS),Darwin)
+ifeq (${MACHINE_CPUARCH},amd64)
+HOST_INCLUDES= -I. -I/usr/local/opt/openssl@1.1/include
+else
 HOST_INCLUDES= -I. -I/opt/homebrew/opt/openssl@1.1/include
+endif
+endif
 # Use libepoll shim on FreeBSD
 ifeq ($(TGT_OS),FreeBSD)
 HOST_INCLUDES+= -I/usr/local/include/libepoll-shim
@@ -327,7 +341,6 @@ KERN_SRCS+=                 \
 	kern_sysctl.c       \
 	kern_tc.c           \
 	kern_uuid.c         \
-	link_elf.c          \
 	md5c.c              \
 	subr_capability.c   \
 	subr_counter.c      \
@@ -352,6 +365,9 @@ KERN_SRCS+=                 \
 	uipc_socket.c       \
 	uipc_syscalls.c
 
+ifneq (${HOST_OS},Darwin)
+KERN_SRCS += link_elf.c
+endif
 
 KERN_MHEADERS+=		\
 	bus_if.m	\
@@ -566,7 +582,6 @@ EXTRA_TCP_STACKS_SRCS+=		\
 	bbr.c
 endif
 
- 
 ifneq ($(TGT_OS),FreeBSD)
 ifndef FF_KNI
 FF_HOST_SRCS+=         \
@@ -661,11 +676,17 @@ all: libfstack.a
 # externally available.
 #
 libfstack.a: machine_includes ff_api.symlist ${MHEADERS} ${MSRCS} ${HOST_OBJS} ${ASM_OBJS} ${OBJS}
+ifeq (${HOST_OS},Darwin)
+	sed 's/.*/_&/' < ff_api.symlist > ff_api.symlist.darwin
+	${LD} -d -r -o $*.ro -exported_symbols_list ff_api.symlist.darwin ${HOST_OBJS} ${ASM_OBJS} ${OBJS}
+	rm ff_api.symlist.darwin
+else
 	${LD} -d -r -o $*.ro ${ASM_OBJS} ${OBJS}
 	nm $*.ro  | grep -v ' U ' | cut -d ' ' -f 3 > $*_localize_list.tmp
-	objcopy --localize-symbols=$*_localize_list.tmp $*.ro 
+	objcopy --localize-symbols=$*_localize_list.tmp $*.ro
 	rm $*_localize_list.tmp
 	objcopy --globalize-symbols=ff_api.symlist $*.ro
+endif
 	rm -f $@
 	ar -cqs $@ $*.ro ${HOST_OBJS}
 	rm -f $*.ro

@@ -119,9 +119,15 @@ struct mod_pnp_match_info
 	};								\
 	DATA_SET(modmetadata_set, MODULE_METADATA_CONCAT(uniquifier))
 
+#ifdef Darwin
+#define __mod_dep_section __section("d,.data")
+#else
+#define __mod_dep_section __section(".data")
+#endif
+
 #define	MODULE_DEPEND(module, mdepend, vmin, vpref, vmax)		\
 	static struct mod_depend _##module##_depend_on_##mdepend	\
-	    __section(".data") = {					\
+	    __mod_dep_section = {					\
 		vmin,							\
 		vpref,							\
 		vmax							\

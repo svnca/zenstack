@@ -49,7 +49,15 @@
 #include <sys/resource.h>
 #include <machine/pcpu.h>
 
+#ifdef Darwin
+#define	DPCPU_SETNAME		"__DATA,set_pcpu"
+#define	__dpcpu_section_start	__asm("section$start$__DATA$set_pcpu")
+#define	__dpcpu_section_end	__asm("section$end$__DATA$set_pcpu")
+#else
 #define	DPCPU_SETNAME		"set_pcpu"
+#define	__dpcpu_section_start
+#define	__dpcpu_section_end
+#endif
 #define	DPCPU_SYMPREFIX		"pcpu_entry_"
 
 #ifdef _KERNEL
@@ -57,9 +65,9 @@
 /*
  * Define a set for pcpu data.
  */
-extern uintptr_t *__start_set_pcpu;
+extern uintptr_t *__start_set_pcpu __dpcpu_section_start;
 __GLOBL(__start_set_pcpu);
-extern uintptr_t *__stop_set_pcpu;
+extern uintptr_t *__stop_set_pcpu __dpcpu_section_end;
 __GLOBL(__stop_set_pcpu);
 
 /*

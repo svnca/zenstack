@@ -24,7 +24,10 @@ F-STACK_VERSION=1.24
 TGT_OS=$(shell uname)
 TGT_ARCH=x86
 ifeq ($(TGT_OS),FreeBSD)
+ifneq (, $(shell which gcc))
 CC=gcc
+HAVE_GCC=1
+endif
 else ifeq ($(TGT_OS),Darwin)
 DARWIN=1
 ifeq ($(shell uname -m),FreeBSD)
@@ -132,6 +135,7 @@ endif
 HOST_CFLAGS+= -DINET
 CFLAGS+= -DINET
 
+ifdef HAVE_GCC
 GCCVERGE10 = $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 10)
 ifeq "$(GCCVERGE10)" "1" 
     CFLAGS+= -Wno-error=stringop-overflow
@@ -141,6 +145,7 @@ GCCVERGE11 = $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 11)
 ifeq "$(GCCVERGE11)" "1" 
     CFLAGS+= -Wno-error=stringop-overread
 endif
+endif # HAVE_GCC
 
 ifdef FF_INET6
 HOST_CFLAGS+= -DINET6

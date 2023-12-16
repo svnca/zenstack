@@ -40,6 +40,7 @@ typedef int (*pcpu_ssbd)(int);
 struct debug_monitor_state;
 
 #define	PCPU_MD_FIELDS							\
+	struct	pcpu *pc_prvspace;	/* Self-reference */		\
 	u_int	pc_acpi_id;	/* ACPI CPU id */			\
 	u_int	pc_midr;	/* stored MIDR value */			\
 	uint64_t pc_clock;						\
@@ -56,7 +57,9 @@ struct debug_monitor_state;
 struct pcb;
 struct pcpu;
 
+#if 0
 register struct pcpu *pcpup __asm ("x18");
+#endif
 
 #define	get_pcpu()	pcpup
 

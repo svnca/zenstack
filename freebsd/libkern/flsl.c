@@ -34,6 +34,7 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/libkern.h>
 
+#ifndef	HAVE_INLINE_FLSL
 /*
  * Find Last Set bit
  */
@@ -48,3 +49,4 @@ flsl(long mask)
 		mask = (unsigned long)mask >> 1;
 	return (bit);
 }
+#endif

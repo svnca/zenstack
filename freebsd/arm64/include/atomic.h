@@ -60,7 +60,11 @@
 #include <sys/atomic_common.h>
 
 #ifdef _KERNEL
+#if 0
 extern bool lse_supported;
+#else
+#define lse_supported 0
+#endif
 
 #ifdef LSE_ATOMICS
 #define	_ATOMIC_LSE_SUPPORTED	1

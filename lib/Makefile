@@ -191,6 +191,7 @@ endif
 #
 ifeq (${MACHINE_CPUARCH},aarch64)
 MACHINE_CPUARCH=arm64
+ARM64_INCLUDES=1
 endif
 
 
@@ -391,6 +392,7 @@ LIBKERN_SRCS+=		 \
 	strlcpy.c	 \
 	strnlen.c        \
 	fls.c		 \
+	gsb_crc32.c	 \
 	flsl.c
 else
 LIBKERN_SRCS+=		 \
@@ -729,6 +731,9 @@ machine_includes:
 	@if [ "${X86_INCLUDES}" != "0" ]; then 				\
 		mkdir -p ${MACHINE_INCLUDES_ROOT}/x86;			\
 		cp -r $S/x86/include/* ${MACHINE_INCLUDES_ROOT}/x86;	\
+	elif [ "${ARM64_INCLUDES}" != "0" ]; then 			\
+		mkdir -p ${MACHINE_INCLUDES_ROOT}/arm64;		\
+		cp -r $S/arm64/include/* ${MACHINE_INCLUDES_ROOT}/arm64;\
 	fi
 
 #

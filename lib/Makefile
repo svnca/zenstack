@@ -21,6 +21,7 @@ PREFIX_INCLUDE=/usr/local/include
 PREFIX_BIN=/usr/local/bin
 F-STACK_CONF=/etc/f-stack.conf
 F-STACK_VERSION=1.24
+# SAVE_TEMPS=-save-temps=obj
 TGT_OS=$(shell uname)
 TGT_ARCH=x86
 ifeq ($(TGT_OS),FreeBSD)
@@ -161,7 +162,7 @@ HOST_CFLAGS+= -DIPSEC
 CFLAGS+= -DIPSEC
 endif
 
-HOST_C= ${CC} -c $(HOST_CFLAGS) ${HOST_INCLUDES} ${WERROR} ${PROF} $<
+HOST_C= ${CC} ${SAVE_TEMPS} -c $(HOST_CFLAGS) ${HOST_INCLUDES} ${WERROR} ${PROF} $<
 
 
 ifneq ($(filter amd64 i386,${MACHINE_CPUARCH}),)

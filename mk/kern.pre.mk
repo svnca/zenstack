@@ -80,7 +80,7 @@ CFLAGS+=	${CONF_CFLAGS}
 # Optional linting. This can be overridden in /etc/make.conf.
 LINTFLAGS=	${LINTOBJKERNFLAGS}
 
-NORMAL_C= ${CC} -save-temps=obj -c ${CFLAGS} ${KERNEL_CFLAGS} ${INCLUDES} ${WERROR} ${WERROR_OFF} ${PROF} $< -o $@
+NORMAL_C= ${CC} ${SAVE_TEMPS} -c ${CFLAGS} ${KERNEL_CFLAGS} ${INCLUDES} ${WERROR} ${WERROR_OFF} ${PROF} $< -o $@
 NORMAL_S= ${CC} -c ${ASM_CFLAGS} ${INCLUDES} ${WERROR} $<
 PROFILE_C= ${CC} -c ${CFLAGS} ${KERNEL_CFLAGS} ${INCLUDES} ${WERROR} $<
 NORMAL_C_NOWERROR= ${CC} -c ${CFLAGS} ${KERNEL_CFLAGS} ${INCLUDES} ${PROF} $<

@@ -373,7 +373,9 @@ KERN_SRCS+=                 \
 	uipc_syscalls.c
 
 ifneq (${HOST_OS},Darwin)
+ifeq (,$(findstring CYGWIN,$(HOST_OS)))
 KERN_SRCS += link_elf.c
+endif
 endif
 
 KERN_MHEADERS+=		\
@@ -405,6 +407,10 @@ LIBKERN_SRCS+=		 \
 	strnlen.c
 endif
 
+ifneq (,$(findstring CYGWIN,$(HOST_OS)))
+LIBKERN_SRCS+=		 \
+	strtoq.c
+endif
 
 MACHINE_SRCS+=		 \
 	in_cksum.c
@@ -736,6 +742,11 @@ machine_includes:
 		mkdir -p ${MACHINE_INCLUDES_ROOT}/arm64;		\
 		cp -r $S/arm64/include/* ${MACHINE_INCLUDES_ROOT}/arm64;\
 	fi
+	@if [ "$(findstring CYGWIN,$(HOST_OS))" == "CYGWIN" ]; then\
+		rm -rf ${CURDIR}/include/machine;\
+		cp -a ${CURDIR}/include/amd64/include ${CURDIR}/include/machine;\
+	fi
+
 
 #
 # Distilled from FreeBSD src/sys/conf/kern.post.mk

@@ -91,6 +91,7 @@ ff_init_thread0(void)
     pcurthread = &thread0;
 }
 
+#ifdef FSTACK_TRANSITION
 int
 kproc_kthread_add(void (*start_routine)(void *), void *arg,
     struct proc **p,  struct thread **tdp,
@@ -113,6 +114,7 @@ kthread_exit(void)
 {
     panic("kthread_exit unsupported");
 }
+#endif
 
 void
 tdsignal(struct thread *td, int sig)

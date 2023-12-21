@@ -269,6 +269,7 @@ FF_SRCS+=                     \
 	ff_kern_condvar.c     \
 	ff_kern_environment.c \
 	ff_kern_intr.c        \
+	zen_kern_kthread.c    \
 	ff_kern_subr.c        \
 	ff_kern_synch.c       \
 	ff_kern_timeout.c     \
@@ -282,7 +283,6 @@ FF_SRCS+=                     \
 
 # uinet_if_pcap.c
 # uinet_if_pcap_host.c
-# uinet_host_interface.c
 
 ifdef FF_NETGRAPH
 FF_SRCS+=                   \
@@ -292,6 +292,7 @@ endif
 
 FF_HOST_SRCS+=                 \
 	ff_host_interface.c    \
+	uinet_host_interface.c \
 	ff_config.c         \
 	ff_ini_parser.c     \
 	ff_init.c
@@ -723,11 +724,16 @@ ${OBJS}: %.o: %.c ${IMACROS_FILE}
 .m.h:
 	${AWK} -f $S/tools/makeobjops.awk $< -h
 
+TEMP_SRCS = $(HOST_SRCS) $(SRCS)
+TEMPS := $(TEMP_SRCS:%.c=%.i)
+TEMPS += $(TEMP_SRCS:%.c=%.s)
+
 .PHONY: clean
 clean:
 	rm -f libfstack.a
 	rm -f ${MHEADERS} ${MSRCS} ${HOST_OBJS} ${ASM_OBJS} ${OBJS} ${PROGRAM} ${IMACROS_FILE}
 	rm -rf ${MACHINE_INCLUDES_ROOT}
+	-$(RM) ${TEMPS}
 
 
 .PHONY: machine_includes
